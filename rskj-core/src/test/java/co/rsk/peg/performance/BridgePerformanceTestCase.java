@@ -72,6 +72,7 @@ public abstract class BridgePerformanceTestCase {
         }
 
         public void startTimer() {
+            // Everything is expressed in nanoseconds
             startTime = thread.getCurrentThreadCpuTime();
             startRealTime = System.currentTimeMillis() * MILLION;
         }

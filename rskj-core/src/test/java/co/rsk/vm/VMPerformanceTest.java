@@ -279,6 +279,7 @@ public class VMPerformanceTest {
         public long wallClockTimeMillis; // in milliseconds
         public long deltaTime; // in nanoseconds.
         public long gas;
+        public int programCloneCount;
 
     }
 
@@ -304,6 +305,7 @@ public class VMPerformanceTest {
         PerfRes best = null;
         forceGc();
         PerfRes pr = new PerfRes();
+        pr.programCloneCount = cloneCount;
         for (int g = 0; g < maxGroups; g++) {
             long startUsedMemory = (rt.totalMemory() - rt.freeMemory());
             long startRealTime = System.currentTimeMillis();
@@ -346,6 +348,7 @@ public class VMPerformanceTest {
                 if (best.deltaTime == 0)
                     System.out.println("bad time");
                 pr = new PerfRes();
+                pr.programCloneCount = cloneCount;
             }
         }
         long percent;
