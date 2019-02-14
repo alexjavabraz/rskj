@@ -280,7 +280,6 @@ public class VMPerformanceTest {
         public long deltaTime; // in nanoseconds.
         public long gas;
         public int programCloneCount;
-
     }
 
     public interface ResultLogger {
@@ -317,10 +316,12 @@ public class VMPerformanceTest {
             // Al parecer el gc puede interrumpir en cualquier momento y hacer estragos
             // Mejor que repetir y tomar el promedio es ejecutar muchas veces y quedarse con
             // el menor tiempo logrado
+
             for (int loops = 0; loops < myLoops; loops++) {
             /*for (int i=0;i<insCount;i++) {
                 vm.step(program);
             }*/
+
                 vm.steps(program, insCount);
 
                 //xUsedMemory = (rt.totalMemory() - rt.freeMemory());
@@ -333,16 +334,21 @@ public class VMPerformanceTest {
 
             }
 
-
             long endTime = thread.getCurrentThreadCpuTime();
             long endRealTime = System.currentTimeMillis();
-            pr.deltaTime = (endTime - startTime) / maxLoops / divisor ; // nano
+            // Divide by number of clones times the number of execution times (would equal maxLoops)
+            // so that we get the average execution time of a single instance of the program.
+            // Also divide by given divisor in case the program represents running more than one instruction and we want the average
+            // for each single instruction.
+            // This value is usually 1 (one)
+            // Extra parenthesis on divisions is for extra clarity on the intended operation
+            pr.deltaTime = ((endTime - startTime) / maxLoops) / divisor ; // nano
+            pr.deltaRealTime = (((endRealTime - startRealTime) * 1000 * 1000) / maxLoops) / divisor; // de milli a nano
             pr.wallClockTimeMillis = (endRealTime - startRealTime);
-            pr.deltaRealTime = (endRealTime - startRealTime) * 1000 *1000 / maxLoops / divisor; // de milli a nano
             long endUsedMemory = (rt.totalMemory() - rt.freeMemory());
 
-
             pr.deltaUsedMemory = endUsedMemory - startUsedMemory;
+
             if ((best == null) || (pr.deltaTime < best.deltaTime)) {
                 best = pr;
                 if (best.deltaTime == 0)

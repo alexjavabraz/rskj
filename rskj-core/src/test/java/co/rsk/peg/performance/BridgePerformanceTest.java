@@ -63,14 +63,24 @@ public class BridgePerformanceTest {
         // Run VM tests and average
         averageNanosecondsPerGasUnit = new Mean();
         VMPerformanceTest.ResultLogger resultLogger = (String name, VMPerformanceTest.PerfRes result) -> {
-            // deltaTime is measured in nanoseconds
+            // deltaTime is measured in nanoseconds and, differently from the gas value, it is
+            // already divided by the programCloneCount, which means it represents the average execution
+            // time of a single VM *instruction* (each *instruction* is actually a n*PUSH + OP + m*POP program
+            // that measures the cost of pushing n operands to the stack, executing the operation and then
+            // popping m results from the stack).
             long nanosecondsPerGasUnit = result.deltaTime / (result.gas / result.programCloneCount);
             averageNanosecondsPerGasUnit.add(nanosecondsPerGasUnit);
         };
         VMPerformanceTest.runWithLogging(resultLogger);
-        // Set reference cost on stats
-        ExecutionStats.nanosecondsPerGasUnit = averageNanosecondsPerGasUnit.getMean();
-        System.out.println(String.format("Reference cost: %d gas/ns (total ", ExecutionStats.nanosecondsPerGasUnit));
+        // Set reference cost on stats (getMax(), getMean() or getMin() can be used depending on the desired
+        // reference value).
+        ExecutionStats.nanosecondsPerGasUnit = averageNanosecondsPerGasUnit.getMax();
+        System.out.println(String.format(
+                "Reference cost: %d ns/gas (min: %d ns/gas, max: %d ns/gas)",
+                ExecutionStats.nanosecondsPerGasUnit,
+                averageNanosecondsPerGasUnit.getMin(),
+                averageNanosecondsPerGasUnit.getMax()
+        ));
     }
 
     @AfterClass
