@@ -62,13 +62,13 @@ public class CommonConfig {
         return buildRepository(databaseDir);
     }
 
-    private Repository buildRepository(String databaseDir) {
+    public Repository buildRepository(String databaseDir) {
         KeyValueDataSource ds = makeDataSource("state", databaseDir);
 
         return new MutableRepository(new MutableTrieCache(new MutableTrieImpl(new TrieImpl(new TrieStoreImpl(ds), true))));
     }
 
-    private KeyValueDataSource makeDataSource(String name, String databaseDir) {
+    public KeyValueDataSource makeDataSource(String name, String databaseDir) {
         KeyValueDataSource ds = new LevelDbDataSource(name, databaseDir);
         ds.init();
         return ds;

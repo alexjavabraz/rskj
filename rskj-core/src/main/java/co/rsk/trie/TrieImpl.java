@@ -546,6 +546,17 @@ public class TrieImpl implements Trie {
         target.save(this);
     }
 
+    @Override
+    public Trie add(final Trie target) {
+        Trie addedTrie = this;
+        Iterator<IterationElement> currentIterator = target.getInOrderIterator();
+        while (currentIterator.hasNext()) {
+            IterationElement iterationElement = currentIterator.next();
+            addedTrie = addedTrie.put(PathEncoder.encode(iterationElement.getExpandedPath()), iterationElement.getNode().getValue());
+        }
+        return addedTrie;
+    }
+
     private static byte[] concat(byte[]... arrays) {
         int length = Stream.of(arrays).mapToInt(array -> array.length).sum();
         byte[] result = new byte[length];

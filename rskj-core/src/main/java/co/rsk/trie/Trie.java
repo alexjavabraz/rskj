@@ -67,6 +67,8 @@ public interface Trie {
 
     int trieSize();
 
+    Trie add(Trie val);
+
     // This method can only return keys whose size is multiple of 8 bits
     // Special value Integer.MAX_VALUE means collect them all.
     Set<ByteArrayWrapper> collectKeys(int byteSize);
