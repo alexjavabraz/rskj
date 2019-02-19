@@ -54,6 +54,7 @@ public class UnitrieMigrationTool {
     private final CommonConfig commonConfig;
     private final KeyValueDataSource orchidContractDetailsDataStore;
     private final KeyValueDataSource orchidContractsStorage;
+    private final TrieStore orchidContractsTrieStore;
     private final BlockStore blockStore;
     private final TrieStore orchidAccountsTrieStore;
     private final String orchidDatabase;
@@ -63,9 +64,9 @@ public class UnitrieMigrationTool {
     private final Map<ByteArrayWrapper, byte[]> keccak256Cache;
 
     public static void main(String[] args) {
-        UnitrieMigrationTool migrationTool = new UnitrieMigrationTool("/Users/diegoll/Documents/databases/test");
-        Repository newRepository = migrationTool.migrateRepository("/Users/diegoll/Documents/databases/new");
-        System.out.println(Hex.toHexString(newRepository.getRoot()));
+        UnitrieMigrationTool migrationTool = new UnitrieMigrationTool("/Users/diegoll/Documents/databases/mainnet");
+        byte[] lastStateRoot = migrationTool.migrateRepository(100);
+        System.out.println(Hex.toHexString(lastStateRoot));
     }
 
     public UnitrieMigrationTool(String orchidDatabase) {
@@ -73,6 +74,7 @@ public class UnitrieMigrationTool {
         this.commonConfig = new CommonConfig();
         this.orchidContractDetailsDataStore = commonConfig.makeDataSource("details", orchidDatabase);
         this.orchidContractsStorage = commonConfig.makeDataSource("contracts-storage", orchidDatabase);
+        this.orchidContractsTrieStore = new CachedTrieStore(new TrieStoreImpl(orchidContractsStorage));
         DefaultConfig defaultConfig = new DefaultConfig();
         this.blockStore = defaultConfig.buildBlockStore(orchidDatabase);
         this.orchidAccountsTrieStore = new CachedTrieStore(new TrieStoreImpl(commonConfig.makeDataSource("state", orchidDatabase)));
@@ -89,48 +91,60 @@ public class UnitrieMigrationTool {
         this.addressHashes.put(ByteUtil.wrap(Keccak256Helper.keccak256(RemascTransaction.REMASC_ADDRESS.getBytes())), RemascTransaction.REMASC_ADDRESS);
     }
 
-    private Repository migrateRepository(String newDatabase) {
-        Trie unitrie = new TrieImpl(new TrieStoreImpl(commonConfig.makeDataSource("state", newDatabase)), true);
+    private byte[] migrateRepository(long rewindCount) {
+        MutableRepository unitrieRepository = new MutableRepository(new TrieImpl(new TrieStoreImpl(new HashMapDB()), true));
         long maxNumber = blockStore.getMaxNumber();
-        for (int height = 0; height < maxNumber; height++) { // genesis must be handled independently
+        byte[] lastStateRoot = null;
+        for (long height = maxNumber - rewindCount; height < maxNumber; height++) {
+            System.out.printf("======================================= %07d ========================================\n", height);
             Block currentBlock = blockStore.getChainBlockByNumber(height);
             byte[] orchidStateRoot = currentBlock.getStateRoot();
             Trie orchidAccountsTrie = orchidAccountsTrieStore.retrieve(orchidStateRoot);
-            Trie partialUnitrie = buildPartialUnitrie(orchidAccountsTrie, orchidContractDetailsDataStore);
-            unitrie = unitrie.add(partialUnitrie);
-            if (height % 50 == 0) {
-                System.out.printf("======================================= %07d ========================================\n", height);
-                System.out.printf("Orchid state root:\t\t%s\nConverted Unitrie root:\t%s\n",
+            buildPartialUnitrie(orchidAccountsTrie, orchidContractDetailsDataStore, unitrieRepository);
+
+            lastStateRoot = unitrieRepository.getRoot();
+            byte[] orchidMigratedStateRoot = trieConverter.getOrchidAccountTrieRoot((TrieImpl) unitrieRepository.getMutableTrie().getTrie());
+            if (!Arrays.equals(orchidStateRoot, orchidMigratedStateRoot)) {
+                System.out.printf("\nOrchid state root:\t\t%s\nConverted Unitrie root:\t%s\n",
                         Hex.toHexString(orchidStateRoot),
-                        Hex.toHexString(trieConverter.getOrchidAccountTrieRoot((TrieImpl) unitrie))
+                        Hex.toHexString(orchidMigratedStateRoot)
                 );
+                throw new IllegalStateException("Not matching state root");
+            } else {
+                System.out.println("Matched state root");
             }
         }
-        return new MutableRepository(unitrie);
+        return lastStateRoot;
     }
 
-    private Trie buildPartialUnitrie(Trie orchidAccountsTrie, KeyValueDataSource detailsDataStore) {
-        Repository partialRepository = new MutableRepository(new TrieImpl(new TrieStoreImpl(new HashMapDB()), true));
+    private void buildPartialUnitrie(Trie orchidAccountsTrie, KeyValueDataSource detailsDataStore, Repository repository) {
+        int accountsToLog = 500;
+        int accountsCounter = 0;
+        System.out.printf("(x = %d accounts): ", accountsToLog);
         Iterator<Trie.IterationElement> orchidAccountsTrieIterator = orchidAccountsTrie.getPreOrderIterator();
         while (orchidAccountsTrieIterator.hasNext()) {
             Trie.IterationElement orchidAccountsTrieElement = orchidAccountsTrieIterator.next();
             byte[] currentElementExpandedPath = orchidAccountsTrieElement.getExpandedPath();
             if (currentElementExpandedPath.length == Keccak256Helper.DEFAULT_SIZE) {
+                accountsCounter++;
                 byte[] hashedAddress = PathEncoder.encode(currentElementExpandedPath);
                 OldAccountState oldAccountState = new OldAccountState(orchidAccountsTrieElement.getNode().getValue());
                 AccountState accountState = new AccountState(oldAccountState.getNonce(), oldAccountState.getBalance());
                 RskAddress accountAddress = addressHashes.get(ByteUtil.wrap(hashedAddress));
-                partialRepository.createAccount(accountAddress);
-                partialRepository.updateAccountState(accountAddress, accountState);
+                repository.createAccount(accountAddress);
+                repository.updateAccountState(accountAddress, accountState);
                 byte[] contractData = detailsDataStore.get(accountAddress.getBytes());
                 byte[] codeHash = oldAccountState.getCodeHash();
                 byte[] accountStateRoot = oldAccountState.getStateRoot();
                 if (contractData != null && !Arrays.equals(accountStateRoot, EMPTY_TRIE_HASH)) {
-                    migrateContract(accountAddress, partialRepository, contractData, codeHash, accountStateRoot);
+                    migrateContract(accountAddress, repository, contractData, codeHash, accountStateRoot);
+                }
+                if (accountsCounter % accountsToLog == 0) {
+                    System.out.print("x");
                 }
             }
         }
-        return partialRepository.getMutableTrie().getTrie();
+        allValuesProcessed(orchidAccountsTrie, accountsCounter);
     }
 
     private void migrateContract(RskAddress accountAddress, Repository currentRepository, byte[] contractData, byte[] accountCodeHash, byte[] stateRoot) {
@@ -153,12 +167,18 @@ public class UnitrieMigrationTool {
         byte[] root = rlpStorage.getRLPData();
         Trie contractStorageTrie;
         if (external != null && external.length > 0 && external[0] == 1) {
-            //FIXME(diegoll): review co.rsk.db.ContractStorageStoreFactory#addressIsDedicated
-            TrieStore contractTrieStore = contractStoreCache.computeIfAbsent(
-                    contractAddress,
-                    address -> new CachedTrieStore(new TrieStoreImpl(commonConfig.makeDataSource("details-storage/" + address, orchidDatabase)))
-            );
-            contractStorageTrie = contractTrieStore.retrieve(root);
+            // picco-fix (ref: co.rsk.db.ContractStorageStoreFactory#getTrieStore)
+            contractStorageTrie = orchidContractsTrieStore.retrieve(root);
+            if (contractStorageTrie == null) {
+                TrieStore contractTrieStore = contractStoreCache.computeIfAbsent(
+                        contractAddress,
+                        address -> new CachedTrieStore(new TrieStoreImpl(commonConfig.makeDataSource("details-storage/" + address, orchidDatabase)))
+                );
+                contractStorageTrie = contractTrieStore.retrieve(root);
+                if (contractStorageTrie == null) {
+                    throw new IllegalStateException(String.format("Unable to find root %s for the contract %s", Hex.toHexString(root), contractAddress));
+                }
+            }
         } else {
             contractStorageTrie = orchidTrieDeserialize(root);
         }
@@ -166,17 +186,36 @@ public class UnitrieMigrationTool {
 
         RLPList rlpKeys = (RLPList) rlpList.get(4);
         boolean initialized = false;
+        int keysCount = rlpKeys.size();
+        int keysToLog = 2000;
+        boolean logKeysMigrationProgress = keysCount > keysToLog * 2;
+        if (logKeysMigrationProgress) {
+            System.out.printf("\nMigrating %s with %d keys\n(. = %d keys): ", contractAddress, rlpKeys.size(), keysToLog);
+        }
+        int migratedKeysCounter = 0;
         for (RLPElement rlpKey : rlpKeys) {
             byte[] rawKey = rlpKey.getRLPData();
             byte[] storageKey = keccak256Cache.computeIfAbsent(ByteUtil.wrap(rawKey), key -> Keccak256Helper.keccak256(key.getData()));
             byte[] value = contractStorageTrie.get(storageKey);
             if (value != null) {
+                migratedKeysCounter++;
                 if (!initialized) {
                     currentRepository.setupContract(accountAddress);
                     initialized = true;
                 }
+                if (logKeysMigrationProgress && migratedKeysCounter % keysToLog == 0) {
+                    System.out.print(".");
+                }
                 currentRepository.addStorageBytes(contractAddress, new DataWord(rawKey), value);
             }
+        }
+        try {
+            allValuesProcessed(contractStorageTrie, migratedKeysCounter);
+        } catch (IllegalStateException ise) {
+            throw new IllegalStateException(String.format("Error processing storage for contract %s", contractAddress), ise);
+        }
+        if (logKeysMigrationProgress) {
+            System.out.println();
         }
 
         if (code != null) {
@@ -185,6 +224,25 @@ public class UnitrieMigrationTool {
                 code = orchidContractsStorage.get(accountCodeHash);
             }
             currentRepository.saveCode(accountAddress, code);
+        }
+    }
+
+    /**
+     * Counts all nodes with value and checks it's equals to accountsCounter
+     * @param currentTrie
+     * @param accountsCounter
+     */
+    private void allValuesProcessed(Trie currentTrie, int expectedCount) {
+        int valueCounter = 0;
+        Iterator<Trie.IterationElement> inOrderIterator = currentTrie.getInOrderIterator();
+        while (inOrderIterator.hasNext()) {
+            Trie.IterationElement iterationElement = inOrderIterator.next();
+            if (iterationElement.getNode().getValue() != null) {
+                valueCounter++;
+            }
+        }
+        if (valueCounter != expectedCount) {
+            throw new IllegalStateException(String.format("Trie %s has %d values and we expected %d", currentTrie.getHash(), valueCounter, expectedCount));
         }
     }
 

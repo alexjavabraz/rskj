@@ -190,6 +190,7 @@ public class TrieConverter {
             }
         }
 
+
         if (onlyChild) {
             byte[] keyCopy;
             if (encodedSharedPath != null){

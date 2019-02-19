@@ -552,7 +552,10 @@ public class TrieImpl implements Trie {
         Iterator<IterationElement> currentIterator = target.getInOrderIterator();
         while (currentIterator.hasNext()) {
             IterationElement iterationElement = currentIterator.next();
-            addedTrie = addedTrie.put(PathEncoder.encode(iterationElement.getExpandedPath()), iterationElement.getNode().getValue());
+            byte[] nodeValue = iterationElement.getNode().getValue();
+            if (nodeValue != null) {
+                addedTrie = addedTrie.put(PathEncoder.encode(iterationElement.getExpandedPath()), nodeValue);
+            }
         }
         return addedTrie;
     }
