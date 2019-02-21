@@ -240,9 +240,9 @@ public class BridgeSerializationUtils {
 
     // For the serialization format, see BridgeSerializationUtils::serializeFederationWithSerializer
     private static Federation deserializeFederationWithDesserializer(
-        byte[] data,
-        NetworkParameters networkParameters,
-        FederationMemberDesserializer federationMemberDesserializer) {
+            byte[] data,
+            NetworkParameters networkParameters,
+            FederationMemberDesserializer federationMemberDesserializer) {
 
         RLPList rlpList = (RLPList)RLP.decode2(data).get(0);
 
@@ -342,7 +342,7 @@ public class BridgeSerializationUtils {
     public static PendingFederation deserializePendingFederationOnlyBtcKeys(byte[] data) {
         // BTC, RSK and MST keys are the same
         List<FederationMember> members = deserializeBtcPublicKeys(data).stream().map(pk ->
-            FederationMember.getFederationMemberFromKey(pk)
+                FederationMember.getFederationMemberFromKey(pk)
         ).collect(Collectors.toList());
 
         return new PendingFederation(members);

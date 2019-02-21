@@ -1233,15 +1233,15 @@ public class BridgeStorageProviderTest {
                 BridgeStorageConfiguration.fromBlockchainConfig(config.getBlockchainConfig().getConfigForBlock(500)));
 
         when(repositoryMock.getStorageBytes(any(RskAddress.class), eq(new DataWord("lockWhitelist".getBytes(StandardCharsets.UTF_8)))))
-        .then((InvocationOnMock invocation) -> {
-            calls.add(0);
-            RskAddress contractAddress = invocation.getArgumentAt(0, RskAddress.class);
-            DataWord address = invocation.getArgumentAt(1, DataWord.class);
-            // Make sure the bytes are got from the correct address in the repo
-            Assert.assertTrue(Arrays.equals(new byte[]{(byte)0xaa, (byte)0xbb, (byte)0xcc, (byte)0xdd}, contractAddress.getBytes()));
-            Assert.assertEquals(new DataWord("lockWhitelist".getBytes(StandardCharsets.UTF_8)), address);
-            return new byte[]{(byte)0xaa};
-        });
+                .then((InvocationOnMock invocation) -> {
+                    calls.add(0);
+                    RskAddress contractAddress = invocation.getArgumentAt(0, RskAddress.class);
+                    DataWord address = invocation.getArgumentAt(1, DataWord.class);
+                    // Make sure the bytes are got from the correct address in the repo
+                    Assert.assertTrue(Arrays.equals(new byte[]{(byte)0xaa, (byte)0xbb, (byte)0xcc, (byte)0xdd}, contractAddress.getBytes()));
+                    Assert.assertEquals(new DataWord("lockWhitelist".getBytes(StandardCharsets.UTF_8)), address);
+                    return new byte[]{(byte)0xaa};
+                });
         when(repositoryMock.getStorageBytes(any(RskAddress.class), eq(new DataWord("unlimitedLockWhitelist".getBytes(StandardCharsets.UTF_8)))))
                 .then((InvocationOnMock invocation) -> {
                     calls.add(0);
@@ -1253,18 +1253,18 @@ public class BridgeStorageProviderTest {
                     return new byte[]{(byte)0xbb};
                 });
         PowerMockito
-            .when(BridgeSerializationUtils.deserializeOneOffLockWhitelistAndDisableBlockHeight(any(byte[].class), any(NetworkParameters.class)))
-            .then((InvocationOnMock invocation) -> {
-                calls.add(0);
-                byte[] data = invocation.getArgumentAt(0, byte[].class);
-                NetworkParameters parameters = invocation.getArgumentAt(1, NetworkParameters.class);
-                Assert.assertEquals(NetworkParameters.fromID(NetworkParameters.ID_REGTEST), parameters);
-                // Make sure we're deserializing what just came from the repo with the correct AddressBasedAuthorizer
-                Assert.assertTrue(Arrays.equals(new byte[]{(byte)0xaa}, data));
-                HashMap<Address, LockWhitelistEntry> map = new HashMap<>();
-                map.put(oneOffEntry.address(), oneOffEntry);
-                return Pair.of(map, 0);
-        });
+                .when(BridgeSerializationUtils.deserializeOneOffLockWhitelistAndDisableBlockHeight(any(byte[].class), any(NetworkParameters.class)))
+                .then((InvocationOnMock invocation) -> {
+                    calls.add(0);
+                    byte[] data = invocation.getArgumentAt(0, byte[].class);
+                    NetworkParameters parameters = invocation.getArgumentAt(1, NetworkParameters.class);
+                    Assert.assertEquals(NetworkParameters.fromID(NetworkParameters.ID_REGTEST), parameters);
+                    // Make sure we're deserializing what just came from the repo with the correct AddressBasedAuthorizer
+                    Assert.assertTrue(Arrays.equals(new byte[]{(byte)0xaa}, data));
+                    HashMap<Address, LockWhitelistEntry> map = new HashMap<>();
+                    map.put(oneOffEntry.address(), oneOffEntry);
+                    return Pair.of(map, 0);
+                });
         PowerMockito
                 .when(BridgeSerializationUtils.deserializeUnlimitedLockWhitelistEntries(any(byte[].class), any(NetworkParameters.class)))
                 .then((InvocationOnMock invocation) -> {
@@ -1292,21 +1292,21 @@ public class BridgeStorageProviderTest {
                 BridgeStorageConfiguration.fromBlockchainConfig(config.getBlockchainConfig().getConfigForBlock(500)));
 
         when(repositoryMock.getStorageBytes(any(RskAddress.class), any(DataWord.class)))
-            .then((InvocationOnMock invocation) -> {
-                calls.add(0);
-                RskAddress contractAddress = invocation.getArgumentAt(0, RskAddress.class);
-                DataWord address = invocation.getArgumentAt(1, DataWord.class);
-                // Make sure the bytes are got from the correct address in the repo
-                Assert.assertTrue(Arrays.equals(new byte[]{(byte)0xaa, (byte)0xbb, (byte)0xcc, (byte)0xdd}, contractAddress.getBytes()));
-                Assert.assertEquals(new DataWord("lockWhitelist".getBytes(StandardCharsets.UTF_8)), address);
-                return null;
-            });
+                .then((InvocationOnMock invocation) -> {
+                    calls.add(0);
+                    RskAddress contractAddress = invocation.getArgumentAt(0, RskAddress.class);
+                    DataWord address = invocation.getArgumentAt(1, DataWord.class);
+                    // Make sure the bytes are got from the correct address in the repo
+                    Assert.assertTrue(Arrays.equals(new byte[]{(byte)0xaa, (byte)0xbb, (byte)0xcc, (byte)0xdd}, contractAddress.getBytes()));
+                    Assert.assertEquals(new DataWord("lockWhitelist".getBytes(StandardCharsets.UTF_8)), address);
+                    return null;
+                });
         PowerMockito
-            .when(BridgeSerializationUtils.deserializeOneOffLockWhitelistAndDisableBlockHeight(any(byte[].class), any(NetworkParameters.class)))
-            .then((InvocationOnMock invocation) -> {
-                calls.add(0);
-                return null;
-            });
+                .when(BridgeSerializationUtils.deserializeOneOffLockWhitelistAndDisableBlockHeight(any(byte[].class), any(NetworkParameters.class)))
+                .then((InvocationOnMock invocation) -> {
+                    calls.add(0);
+                    return null;
+                });
         PowerMockito
                 .when(BridgeSerializationUtils.deserializeUnlimitedLockWhitelistEntries(any(byte[].class), any(NetworkParameters.class)))
                 .then((InvocationOnMock invocation) -> {
@@ -1334,52 +1334,52 @@ public class BridgeStorageProviderTest {
 
         // Mock the One-Off serialization
         PowerMockito
-            .when(BridgeSerializationUtils.serializeOneOffLockWhitelist(any(Pair.class)))
-            .then((InvocationOnMock invocation) -> {
-                Pair<List<OneOffWhiteListEntry>, Integer> data = invocation.getArgumentAt(0, Pair.class);
-                Assert.assertEquals(whitelistMock.getAll(OneOffWhiteListEntry.class), data.getLeft());
-                Assert.assertSame(whitelistMock.getDisableBlockHeight(), data.getRight());
-                serializeCalls.add(0);
-                return Hex.decode("ccdd");
-            });
+                .when(BridgeSerializationUtils.serializeOneOffLockWhitelist(any(Pair.class)))
+                .then((InvocationOnMock invocation) -> {
+                    Pair<List<OneOffWhiteListEntry>, Integer> data = invocation.getArgumentAt(0, Pair.class);
+                    Assert.assertEquals(whitelistMock.getAll(OneOffWhiteListEntry.class), data.getLeft());
+                    Assert.assertSame(whitelistMock.getDisableBlockHeight(), data.getRight());
+                    serializeCalls.add(0);
+                    return Hex.decode("ccdd");
+                });
 
         Mockito
-            .doAnswer((InvocationOnMock invocation) -> {
-                storageBytesCalls.add(0);
-                RskAddress contractAddress = invocation.getArgumentAt(0, RskAddress.class);
-                DataWord address = invocation.getArgumentAt(1, DataWord.class);
-                byte[] data = invocation.getArgumentAt(2, byte[].class);
-                // Make sure the bytes are set to the correct address in the repo and that what's saved is what was serialized
-                Assert.assertTrue(Arrays.equals(Hex.decode("aabbccdd"), contractAddress.getBytes()));
-                Assert.assertEquals(new DataWord("lockWhitelist".getBytes(StandardCharsets.UTF_8)), address);
-                Assert.assertTrue(Arrays.equals(Hex.decode("ccdd"), data));
-                return null;
-            })
-            .when(repositoryMock).addStorageBytes(any(RskAddress.class), eq(new DataWord("lockWhitelist".getBytes(StandardCharsets.UTF_8))), any(byte[].class));
+                .doAnswer((InvocationOnMock invocation) -> {
+                    storageBytesCalls.add(0);
+                    RskAddress contractAddress = invocation.getArgumentAt(0, RskAddress.class);
+                    DataWord address = invocation.getArgumentAt(1, DataWord.class);
+                    byte[] data = invocation.getArgumentAt(2, byte[].class);
+                    // Make sure the bytes are set to the correct address in the repo and that what's saved is what was serialized
+                    Assert.assertTrue(Arrays.equals(Hex.decode("aabbccdd"), contractAddress.getBytes()));
+                    Assert.assertEquals(new DataWord("lockWhitelist".getBytes(StandardCharsets.UTF_8)), address);
+                    Assert.assertTrue(Arrays.equals(Hex.decode("ccdd"), data));
+                    return null;
+                })
+                .when(repositoryMock).addStorageBytes(any(RskAddress.class), eq(new DataWord("lockWhitelist".getBytes(StandardCharsets.UTF_8))), any(byte[].class));
 
         // Mock the Unlimited serialization
         PowerMockito
-            .when(BridgeSerializationUtils.serializeUnlimitedLockWhitelist(any(List.class)))
-            .then((InvocationOnMock invocation) -> {
-                List<UnlimitedWhiteListEntry> unlimitedWhiteListEntries = invocation.getArgumentAt(0, List.class);
-                Assert.assertEquals(whitelistMock.getAll(UnlimitedWhiteListEntry.class), unlimitedWhiteListEntries);
-                serializeCalls.add(0);
-                return Hex.decode("bbcc");
-            });
+                .when(BridgeSerializationUtils.serializeUnlimitedLockWhitelist(any(List.class)))
+                .then((InvocationOnMock invocation) -> {
+                    List<UnlimitedWhiteListEntry> unlimitedWhiteListEntries = invocation.getArgumentAt(0, List.class);
+                    Assert.assertEquals(whitelistMock.getAll(UnlimitedWhiteListEntry.class), unlimitedWhiteListEntries);
+                    serializeCalls.add(0);
+                    return Hex.decode("bbcc");
+                });
 
         Mockito
-            .doAnswer((InvocationOnMock invocation) -> {
-                storageBytesCalls.add(0);
-                RskAddress contractAddress = invocation.getArgumentAt(0, RskAddress.class);
-                DataWord address = invocation.getArgumentAt(1, DataWord.class);
-                byte[] data = invocation.getArgumentAt(2, byte[].class);
-                // Make sure the bytes are set to the correct address in the repo and that what's saved is what was serialized
-                Assert.assertTrue(Arrays.equals(Hex.decode("aabbccdd"), contractAddress.getBytes()));
-                Assert.assertEquals(new DataWord("unlimitedLockWhitelist".getBytes(StandardCharsets.UTF_8)), address);
-                Assert.assertTrue(Arrays.equals(Hex.decode("bbcc"), data));
-                return null;
-            })
-            .when(repositoryMock).addStorageBytes(any(RskAddress.class), eq(new DataWord("unlimitedLockWhitelist".getBytes(StandardCharsets.UTF_8))), any(byte[].class));
+                .doAnswer((InvocationOnMock invocation) -> {
+                    storageBytesCalls.add(0);
+                    RskAddress contractAddress = invocation.getArgumentAt(0, RskAddress.class);
+                    DataWord address = invocation.getArgumentAt(1, DataWord.class);
+                    byte[] data = invocation.getArgumentAt(2, byte[].class);
+                    // Make sure the bytes are set to the correct address in the repo and that what's saved is what was serialized
+                    Assert.assertTrue(Arrays.equals(Hex.decode("aabbccdd"), contractAddress.getBytes()));
+                    Assert.assertEquals(new DataWord("unlimitedLockWhitelist".getBytes(StandardCharsets.UTF_8)), address);
+                    Assert.assertTrue(Arrays.equals(Hex.decode("bbcc"), data));
+                    return null;
+                })
+                .when(repositoryMock).addStorageBytes(any(RskAddress.class), eq(new DataWord("unlimitedLockWhitelist".getBytes(StandardCharsets.UTF_8))), any(byte[].class));
 
         storageProvider.saveLockWhitelist();
         // Shouldn't have tried to save nor serialize anything

@@ -85,9 +85,9 @@ public class Web3RskImpl extends Web3Impl {
                        ConfigCapabilities configCapabilities,
                        BuildInfo buildInfo) {
         super(eth, blockchain, transactionPool, blockStore, receiptStore, properties, minerClient, minerServer,
-              personalModule, ethModule, evmModule, txPoolModule, mnrModule, debugModule,
-              channelManager, repository, peerScoringManager, peerServer, nodeBlockProcessor,
-              hashRateCalculator, configCapabilities, buildInfo);
+                personalModule, ethModule, evmModule, txPoolModule, mnrModule, debugModule,
+                channelManager, repository, peerScoringManager, peerServer, nodeBlockProcessor,
+                hashRateCalculator, configCapabilities, buildInfo);
 
         this.networkStateExporter = networkStateExporter;
         this.blockStore = blockStore;

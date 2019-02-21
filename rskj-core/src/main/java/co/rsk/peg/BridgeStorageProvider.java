@@ -227,8 +227,8 @@ public class BridgeStorageProvider {
         newFederation = safeGetFromRepository(NEW_FEDERATION_KEY,
                 data ->
                         data == null
-                        ? null
-                        : deserializeFederationAccordingToVersion(data, storageVersion)
+                                ? null
+                                : deserializeFederationAccordingToVersion(data, storageVersion)
         );
         return newFederation;
     }

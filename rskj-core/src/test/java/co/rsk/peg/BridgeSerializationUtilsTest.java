@@ -138,17 +138,17 @@ public class BridgeSerializationUtilsTest {
 
         // Only actual keys serialized are BTC keys, so we don't really care about RSK or MST keys
         Federation federation = new Federation(
-            FederationTestUtils.getFederationMembersWithBtcKeys(Arrays.asList(new BtcECKey[]{
-                    BtcECKey.fromPublicOnly(publicKeyBytes[0]),
-                    BtcECKey.fromPublicOnly(publicKeyBytes[1]),
-                    BtcECKey.fromPublicOnly(publicKeyBytes[2]),
-                    BtcECKey.fromPublicOnly(publicKeyBytes[3]),
-                    BtcECKey.fromPublicOnly(publicKeyBytes[4]),
-                    BtcECKey.fromPublicOnly(publicKeyBytes[5]),
-            })),
-            Instant.ofEpochMilli(0xabcdef), //
-            42L,
-            NetworkParameters.fromID(NetworkParameters.ID_REGTEST)
+                FederationTestUtils.getFederationMembersWithBtcKeys(Arrays.asList(new BtcECKey[]{
+                        BtcECKey.fromPublicOnly(publicKeyBytes[0]),
+                        BtcECKey.fromPublicOnly(publicKeyBytes[1]),
+                        BtcECKey.fromPublicOnly(publicKeyBytes[2]),
+                        BtcECKey.fromPublicOnly(publicKeyBytes[3]),
+                        BtcECKey.fromPublicOnly(publicKeyBytes[4]),
+                        BtcECKey.fromPublicOnly(publicKeyBytes[5]),
+                })),
+                Instant.ofEpochMilli(0xabcdef), //
+                42L,
+                NetworkParameters.fromID(NetworkParameters.ID_REGTEST)
         );
 
         byte[] result = BridgeSerializationUtils.serializeFederationOnlyBtcKeys(federation);
@@ -169,10 +169,10 @@ public class BridgeSerializationUtilsTest {
         mock_RLP_decode2(InnerListMode.LAST_ELEMENT);
 
         byte[][] publicKeyBytes = Arrays.asList(100, 200, 300, 400, 500, 600).stream()
-            .map(k -> BtcECKey.fromPrivate(BigInteger.valueOf(k)))
-            .sorted(BtcECKey.PUBKEY_COMPARATOR)
-            .map(k -> k.getPubKey())
-            .toArray(byte[][]::new);
+                .map(k -> BtcECKey.fromPrivate(BigInteger.valueOf(k)))
+                .sorted(BtcECKey.PUBKEY_COMPARATOR)
+                .map(k -> k.getPubKey())
+                .toArray(byte[][]::new);
 
         StringBuilder sampleBuilder = new StringBuilder();
         sampleBuilder.append("03"); // Length of outer list
@@ -672,9 +672,9 @@ public class BridgeSerializationUtilsTest {
         Coin maxToTransfer = Coin.CENT;
 
         LockWhitelist lockWhitelist = new LockWhitelist(
-            Arrays.stream(addressesBytes)
-                .map(bytes -> new Address(NetworkParameters.fromID(NetworkParameters.ID_REGTEST), bytes))
-                .collect(Collectors.toMap(Function.identity(), k -> new OneOffWhiteListEntry(k, maxToTransfer))),
+                Arrays.stream(addressesBytes)
+                        .map(bytes -> new Address(NetworkParameters.fromID(NetworkParameters.ID_REGTEST), bytes))
+                        .collect(Collectors.toMap(Function.identity(), k -> new OneOffWhiteListEntry(k, maxToTransfer))),
                 0);
 
         byte[] result = BridgeSerializationUtils.serializeOneOffLockWhitelist(Pair.of(
