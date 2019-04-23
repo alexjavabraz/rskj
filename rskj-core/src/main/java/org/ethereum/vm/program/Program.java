@@ -58,8 +58,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
 
+import static co.rsk.util.ListArrayUtil.*;
 import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.*;
 import static org.ethereum.crypto.HashUtil.EMPTY_TRIE_HASH;
 import static org.ethereum.util.BIUtil.*;
 import static org.ethereum.util.ByteUtil.EMPTY_BYTE_ARRAY;
