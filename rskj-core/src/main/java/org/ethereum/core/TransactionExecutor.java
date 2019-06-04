@@ -26,6 +26,7 @@ import co.rsk.metrics.profilers.Metric;
 import co.rsk.metrics.profilers.Profiler;
 import co.rsk.metrics.profilers.ProfilerFactory;
 import co.rsk.panic.PanicProcessor;
+import co.rsk.util.ListArrayUtil;
 import org.ethereum.config.Constants;
 import org.ethereum.config.blockchain.upgrades.ActivationConfig;
 import org.ethereum.db.BlockStore;
@@ -45,8 +46,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.apache.commons.lang3.ArrayUtils.getLength;
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 import static org.ethereum.util.BIUtil.*;
 import static org.ethereum.util.ByteUtil.EMPTY_BYTE_ARRAY;
 
@@ -293,8 +292,8 @@ public class TransactionExecutor {
             }
         } else {
             byte[] code = track.getCode(targetAddress);
-            // Code can be null
-            if (isEmpty(code)) {
+
+            if (ListArrayUtil.isEmpty(code)) {
                 mEndGas = toBI(tx.getGasLimit()).subtract(BigInteger.valueOf(basicTxCost));
                 result.spendGas(basicTxCost);
             } else {
@@ -314,9 +313,8 @@ public class TransactionExecutor {
 
     private void create() {
         RskAddress newContractAddress = tx.getContractAddress();
-        cacheTrack.createAccount(newContractAddress); // pre-created
-
-        if (isEmpty(tx.getData())) {
+        if (ListArrayUtil.isEmpty(tx.getData())) {
+            cacheTrack.createAccount(newContractAddress); // pre-created
             mEndGas = toBI(tx.getGasLimit()).subtract(BigInteger.valueOf(basicTxCost));
             // If there is no data, then the account is created, but without code nor
             // storage. It doesn't even call setupContract() to setup a storage root
@@ -378,7 +376,7 @@ public class TransactionExecutor {
             mEndGas = toBI(tx.getGasLimit()).subtract(toBI(program.getResult().getGasUsed()));
 
             if (tx.isContractCreation() && !result.isRevert()) {
-                int createdContractSize = getLength(program.getResult().getHReturn());
+                int createdContractSize = ListArrayUtil.getLength(program.getResult().getHReturn());
                 int returnDataGasValue = createdContractSize * GasCost.CREATE_DATA;
                 if (mEndGas.compareTo(BigInteger.valueOf(returnDataGasValue)) < 0) {
                     program.setRuntimeFailure(

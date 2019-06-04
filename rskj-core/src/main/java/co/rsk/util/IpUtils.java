@@ -1,6 +1,5 @@
 package co.rsk.util;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +22,7 @@ public class IpUtils {
 
 
     public static InetSocketAddress parseAddress(String address) {
-        if(StringUtils.isBlank(address)) {
+        if(address == null || "".equals(address.trim()) ) {
             return null;
         }
         
@@ -33,7 +32,8 @@ public class IpUtils {
         }
 
         matcher = ipv4Pattern.matcher(address);
-        if(StringUtils.countMatches(address, ":") == 1 && matcher.matches()) {
+
+        if (matcher.matches() && matcher.groupCount() == 2) {
             return parseMatch(matcher);
         }
 
