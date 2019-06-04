@@ -1,4 +1,3 @@
-package co.rsk.util;
 /*
  * This file is part of RskJ
  * Copyright (C) 2017 RSK Labs Ltd.
@@ -17,6 +16,8 @@ package co.rsk.util;
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+package co.rsk.util;
+
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Array;
